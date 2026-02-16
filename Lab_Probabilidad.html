@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gauss Explorer Pro - Laboratorio de Estadística Avanzada</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #334155;
+            --highlight: rgba(37, 99, 235, 0.15);
+            --success: #10b981;
+            --info: #0891b2;
+            --math-bg: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--card);
+            padding: 0.8rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 380px 1fr 340px;
+            gap: 1rem;
+            padding: 1rem;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.2rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            overflow-y: auto;
+        }
+
+        .formula-box {
+            background: var(--math-bg);
+            padding: 0.8rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--info);
+            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .formula-item { padding: 4px 0; border-bottom: 1px solid #e2e8f0; }
+        .formula-item:last-child { border-bottom: none; }
+
+        .chart-container {
+            flex: 1;
+            position: relative;
+            background: white;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+
+        .table-wrapper {
+            font-size: 0.7rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: auto;
+            height: 100%;
+        }
+
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th { background: #f1f5f9; position: sticky; top: 0; padding: 6px; border: 1px solid var(--border); color: var(--primary); }
+        td { padding: 4px; border: 1px solid var(--border); text-align: center; }
+        .selected-cell { background-color: var(--accent) !important; color: white; font-weight: bold; }
+
+        .slider-group { margin-bottom: 0.5rem; }
+        .latex-label { margin-bottom: 0.3rem; display: block; font-size: 0.85rem; font-weight: 600; color: var(--primary); }
+        input[type="range"] { width: 100%; accent-color: var(--accent); }
+        
+        .metric-box {
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .value-large { font-size: 1.3rem; font-weight: bold; color: var(--accent); }
+        .label-small { font-size: 0.6rem; text-transform: uppercase; color: #64748b; font-weight: 700; }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0.5rem 0 0.2rem 0;
+        }
+
+        .example-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.75rem;
+        }
+        .btn:hover { background: var(--accent); }
+
+        .fine-adjustment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            background: #fdfdfd;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .adj-input {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        #area-integral-display {
+            font-size: 1rem;
+            text-align: center;
+            padding: 10px;
+            color: var(--accent);
+            min-height: 3.5rem;
+            background: rgba(37, 99, 235, 0.04);
+            border-radius: 8px;
+            border: 1px solid var(--highlight);
+        }
+
+        .interpretation-box {
+            font-size: 0.8rem;
+            color: var(--text);
+            line-height: 1.6;
+            padding: 14px;
+            background: #ffffff;
+            border: 1px solid var(--info);
+            border-radius: 10px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            overflow-y: auto;
+            max-height: 220px;
+        }
+
+        .highlight-text { color: var(--accent); font-weight: 700; }
+        .theory-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1 style="margin:0; font-size: 1.2rem; color: var(--primary);">Gauss Explorer Pro - Laboratorio Estadístico</h1>
+        <small style="color: #64748b;">Análisis Inferencial con Factor de Corrección</small>
+    </div>
+    <div style="text-align: right;">
+        <span style="color: var(--info); font-weight: bold; font-size: 0.7rem;">● - ACTIVO</span>
+    </div>
+</header>
+
+<div class="main-container">
+    <!-- Panel 1: Teoría y Parámetros -->
+    <aside class="panel">
+        <div class="theory-badge">FUNDAMENTOS TEÓRICOS</div>
+        <div class="formula-box">
+            <div class="formula-item" id="pdf-formula"></div>
+            <div class="formula-item" id="fpc-formula"></div>
+            <div class="formula-item" id="z-formula"></div>
+            <div class="formula-item" id="integral-formula"></div>
+        </div>
+
+        <h3>Control de Población</h3>
+        <div class="slider-group">
+            <span id="N-label" class="latex-label"></span>
+            <input type="range" id="N-range" min="100" max="10000" step="100" value="1000">
+        </div>
+        <div class="slider-group">
+            <span id="n-label" class="latex-label"></span>
+            <input type="range" id="n-range" min="10" max="1000" step="10" value="50">
+        </div>
+        <div class="slider-group">
+            <span id="sigma-label" class="latex-label"></span>
+            <input type="range" id="sigma-range" min="0.1" max="4" step="0.1" value="1">
+        </div>
+
+        <hr style="border:0; border-top:1px solid var(--border);">
+
+        <h3>Ajuste de Límites (X)</h3>
+        <div class="fine-adjustment-grid">
+            <div>
+                <label style="font-size: 0.6rem; font-weight: bold; text-transform: uppercase;">Límite Inferior (a)</label>
+                <input type="number" id="input-a" class="adj-input" step="0.01" value="-1.00">
+            </div>
+            <div>
+                <label style="font-size: 0.6rem; font-weight: bold; text-transform: uppercase;">Límite Superior (b)</label>
+                <input type="number" id="input-b" class="adj-input" step="0.01" value="1.00">
+            </div>
+        </div>
+        <button class="btn" style="width: 100%; margin-top: 5px;" onclick="applyManualRange()">Validar Intervalo Exacto</button>
+    </aside>
+
+    <!-- Panel 2: Lienzo Interactivo -->
+    <main class="panel" style="padding: 0.5rem; position: relative;">
+        <div id="area-integral-display"></div>
+
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+
+        <h3>Informe de Interpretación</h3>
+        <div id="interpretation-text" class="interpretation-box">
+            Selecciona un área en el gráfico para generar un análisis estadístico profundo basado en los parámetros actuales.
+        </div>
+
+        <div style="padding: 0.8rem; border-top: 1px solid var(--border); display: flex; justify-content: space-around; gap: 10px;">
+            <div class="metric-box" style="flex: 1;">
+                <span class="label-small">Factor FPC</span>
+                <span id="fpc-val" class="value-large">1.000</span>
+            </div>
+            <div class="metric-box" style="flex: 1;">
+                <span class="label-small">Límites Z</span>
+                <span id="z-limits-val" style="font-size: 1rem; font-weight: bold; color: var(--primary); display: block;">-</span>
+            </div>
+            <div class="metric-box" style="flex: 1;">
+                <span class="label-small">Probabilidad</span>
+                <span id="prob-val" class="value-large" style="color: var(--info);">0.0000</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Panel 3: Escenarios y Tabla -->
+    <aside class="panel">
+        <h3 class="section-title">Regla Empírica</h3>
+        <div class="example-grid">
+            <button class="btn" onclick="applyCase('sigma1')">1 Sigma (68.2%)</button>
+            <button class="btn" onclick="applyCase('sigma2')">2 Sigmas (95.4%)</button>
+            <button class="btn" onclick="applyCase('sigma3')">3 Sigmas (99.7%)</button>
+        </div>
+
+        <h3 class="section-title">Intervalos de Confianza</h3>
+        <div class="example-grid">
+            <button class="btn" onclick="applyCase('conf90')">90% (Z=±1.645)</button>
+            <button class="btn" onclick="applyCase('conf95')">95% (Z=±1.96)</button>
+            <button class="btn" onclick="applyCase('conf99')">99% (Z=±2.576)</button>
+        </div>
+
+        <h3 class="section-title">Pruebas de Hipótesis (α)</h3>
+        <div class="example-grid">
+            <button class="btn" onclick="applyCase('alpha05-left')">Cola Izq. (0.05)</button>
+            <button class="btn" onclick="applyCase('alpha05-right')">Cola Der. (0.05)</button>
+            <button class="btn" onclick="applyCase('alpha01-right')">Cola Der. (0.01)</button>
+        </div>
+
+        <hr style="border:0; border-top:1px solid var(--border);">
+
+        <h3>Tabla de Referencia Z</h3>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr id="table-head"><th>Z</th></tr></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+        <div class="metric-box" style="margin-top: 5px; border-color: var(--accent);">
+            <div id="table-feedback" style="font-size: 0.7rem; font-weight: bold; color: var(--accent);">Esperando valor Z...</div>
+        </div>
+        
+        <button class="btn" style="background: #64748b;" onclick="resetLaboratory()">Reiniciar Lab</button>
+    </aside>
+</div>
+
+<script>
+    // Variables Globales
+    let popTotal = 1000;
+    let sampleSize = 50;
+    let sigmaVal = 1;
+    let muVal = 0;
+    let chart;
+    let isDrawing = false;
+    let startX = null;
+    let endX = null;
+
+    // Matemáticas y Cálculos
+    function getFPC() {
+        if (popTotal <= 1 || sampleSize >= popTotal) return 0;
+        return Math.sqrt((popTotal - sampleSize) / (popTotal - 1));
+    }
+
+    function getAdjustedSigma() {
+        return sigmaVal * getFPC();
+    }
+
+    function normalPDF(x, m, s) {
+        if (s <= 0) return 0;
+        return (1 / (s * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - m) / s, 2));
+    }
+
+    function erf(x) {
+        const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+        const sign = (x < 0) ? -1 : 1;
+        x = Math.abs(x);
+        const t = 1.0 / (1.0 + p * x);
+        const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+        return sign * y;
+    }
+
+    function normalCDF(x, m, s) {
+        if (s <= 0) return x >= m ? 1 : 0;
+        return 0.5 * (1 + erf((x - m) / (s * Math.sqrt(2))));
+    }
+
+    // UI e Inicialización
+    window.onload = () => {
+        renderStaticMath();
+        buildFullZTable();
+        initChart();
+        setupEventListeners();
+        syncInputs();
+    };
+
+    function renderStaticMath() {
+        katex.render("f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{1}{2}(\\frac{x-\\mu}{\\sigma})^2}", document.getElementById('pdf-formula'));
+        katex.render("FPC = \\sqrt{\\frac{N-n}{N-1}}", document.getElementById('fpc-formula'));
+        katex.render("Z = \\frac{X - \\mu}{\\sigma \\cdot FPC}", document.getElementById('z-formula'));
+        katex.render("P = \\int_{a}^{b} f(x) dx", document.getElementById('integral-formula'));
+    }
+
+    function buildFullZTable() {
+        const head = document.getElementById('table-head');
+        for(let i=0; i<=9; i++) {
+            const th = document.createElement('th');
+            th.innerText = '.' + i.toString().padStart(2, '0').slice(-2);
+            head.appendChild(th);
+        }
+        const body = document.getElementById('table-body');
+        for(let z=0; z<=3.4; z+=0.1) {
+            const tr = document.createElement('tr');
+            const th = document.createElement('td');
+            th.className = 'z-row-header';
+            th.innerText = z.toFixed(1);
+            tr.appendChild(th);
+            for(let c=0; c<=0.09; c+=0.01) {
+                const td = document.createElement('td');
+                const val = (normalCDF(z + c, 0, 1) - 0.5).toFixed(4); 
+                td.innerText = val;
+                td.id = `z-${z.toFixed(1)}-${c.toFixed(2)}`;
+                tr.appendChild(td);
+            }
+            body.appendChild(tr);
+        }
+    }
+
+    function initChart() {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        const vLinePlugin = {
+            id: 'vLines',
+            afterDraw: (chart) => {
+                if (startX === null || endX === null) return;
+                const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+                ctx.save();
+                ctx.setLineDash([5, 5]);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#2563eb';
+                [startX, endX].forEach(v => {
+                    const px = x.getPixelForValue(v);
+                    if (px >= chart.chartArea.left && px <= chart.chartArea.right) {
+                        ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px, bottom); ctx.stroke();
+                        ctx.fillStyle = '#2563eb'; ctx.font = 'bold 10px Inter'; ctx.textAlign = 'center';
+                        ctx.fillText(v.toFixed(2), px, bottom + 15);
+                    }
+                });
+                ctx.restore();
+            }
+        };
+
+        chart = new Chart(ctx, {
+            type: 'line',
+            plugins: [vLinePlugin],
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [], fill: true, backgroundColor: [], borderColor: '#2563eb', borderWidth: 2, pointRadius: 0, tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { type: 'linear', min: -5, max: 5, grid: { display: false }, title: { display: true, text: 'Variable X', color: '#64748b' } },
+                    y: { beginAtZero: true, display: true, grid: { color: '#f1f5f9' }, title: { display: true, text: 'Densidad f(x)', color: '#64748b' } }
+                },
+                animation: false
+            }
+        });
+        updateChart();
+    }
+
+    function updateChart() {
+        const dataPoints = [];
+        const bgColors = [];
+        const sAdj = getAdjustedSigma();
+        const fpc = getFPC();
+        
+        const fpcValEl = document.getElementById('fpc-val');
+        if (fpcValEl) fpcValEl.innerText = fpc.toFixed(3);
+
+        const range = Math.max(5, Math.abs(muVal) + 4 * sAdj);
+        chart.options.scales.x.min = muVal - range;
+        chart.options.scales.x.max = muVal + range;
+
+        for (let x = muVal - range; x <= muVal + range; x += range/100) {
+            const y = normalPDF(x, muVal, sAdj);
+            dataPoints.push({ x: x, y: y });
+            let inZone = false;
+            if (startX !== null && endX !== null) {
+                const l = Math.min(startX, endX);
+                const h = Math.max(startX, endX);
+                if (x >= l && x <= h) inZone = true;
+            }
+            bgColors.push(inZone ? 'rgba(37, 99, 235, 0.45)' : 'rgba(37, 99, 235, 0.03)');
+        }
+
+        chart.data.datasets[0].data = dataPoints;
+        chart.data.datasets[0].backgroundColor = bgColors;
+        chart.update('none');
+
+        if (startX !== null && endX !== null) {
+            const a = Math.min(startX, endX);
+            const b = Math.max(startX, endX);
+            const p = Math.abs(normalCDF(b, muVal, sAdj) - normalCDF(a, muVal, sAdj));
+            const zA = (a - muVal) / sAdj;
+            const zB = (b - muVal) / sAdj;
+
+            const probValEl = document.getElementById('prob-val');
+            const zLimitsValEl = document.getElementById('z-limits-val');
+            if (probValEl) probValEl.innerText = p.toFixed(4);
+            if (zLimitsValEl) zLimitsValEl.innerText = `Z₁: ${zA.toFixed(2)} | Z₂: ${zB.toFixed(2)}`;
+            
+            const intTex = `P(${a.toFixed(2)} < X < ${b.toFixed(2)}) = \\int_{${a.toFixed(2)}}^{${b.toFixed(2)}} f(t) dt = ${p.toFixed(4)}`;
+            const integralDisplayEl = document.getElementById('area-integral-display');
+            if (integralDisplayEl) katex.render(intTex, integralDisplayEl);
+            
+            generateInterpretation(a, b, zA, zB, p, fpc);
+            highZ(zB);
+            
+            if (!isDrawing) {
+                const inputAEl = document.getElementById('input-a');
+                const inputBEl = document.getElementById('input-b');
+                if (inputAEl) inputAEl.value = a.toFixed(2);
+                if (inputBEl) inputBEl.value = b.toFixed(2);
+            }
+        }
+    }
+
+    function generateInterpretation(a, b, zA, zB, p, fpc) {
+        const box = document.getElementById('interpretation-text');
+        if (!box) return;
+        const ratio = (sampleSize / popTotal) * 100;
+        let html = `<h4>Análisis de Importancia del FPC</h4>`;
+        
+        html += `<p><b>¿Por qué usamos el Factor de Corrección (FPC)?</b><br>`;
+        html += `En estadística, el error estándar asume usualmente una población infinita. Sin embargo, cuando tu muestra ($n=${sampleSize}$) es una porción significativa de la población total ($N=${popTotal}$), la variabilidad real es <b>menor</b> de lo que predice el modelo estándar. El FPC ajusta esta sobreestimación del error.</p>`;
+        
+        html += `<p><b>Evaluación del Caso Actual:</b><br>`;
+        html += `Tu fracción de muestreo ($n/N$) es del <span class="highlight-text">${ratio.toFixed(1)}%</span>. `;
+        
+        if (ratio > 5) {
+            html += `Como este valor supera el umbral crítico del <b>5%</b>, es imperativo aplicar el factor de <span class="highlight-text">${fpc.toFixed(3)}</span>. `;
+            html += `Esto ha "estrechado" la campana de Gauss, aumentando la confianza en tus resultados y reduciendo el intervalo de incertidumbre en un ${((1 - fpc) * 100).toFixed(1)}%.</p>`;
+        } else {
+            html += `Dado que la muestra es menor al 5%, el impacto del FPC es casi nulo (${fpc.toFixed(3)}). En la práctica profesional, podrías ignorarlo sin afectar la validez.</p>`;
+        }
+
+        html += `<p><b>Interpretación Probabilística:</b><br>`;
+        html += `El área sombreada representa el <span class="highlight-text">${(p * 100).toFixed(2)}%</span> del espacio muestral. El límite $X=${b.toFixed(2)}$ tiene un puntaje Z corregido de <span class="highlight-text">${zB.toFixed(2)}</span>, lo que significa que está a esa distancia exacta de la media en unidades de desviación estándar ajustada.</p>`;
+        
+        box.innerHTML = html;
+    }
+
+    function applyCase(type) {
+        muVal = 0; sigmaVal = 1;
+        popTotal = 1000; sampleSize = 50;
+        if (type === 'large-fpc') { popTotal = 500; sampleSize = 250; }
+        syncInputs();
+        let sAdj = getAdjustedSigma();
+
+        switch(type) {
+            case 'sigma1': startX = -1 * sAdj; endX = 1 * sAdj; break;
+            case 'sigma2': startX = -2 * sAdj; endX = 2 * sAdj; break;
+            case 'sigma3': startX = -3 * sAdj; endX = 3 * sAdj; break;
+            case 'conf90': startX = -1.645 * sAdj; endX = 1.645 * sAdj; break;
+            case 'conf95': startX = -1.96 * sAdj; endX = 1.96 * sAdj; break;
+            case 'conf99': startX = -2.576 * sAdj; endX = 2.576 * sAdj; break;
+            case 'alpha05-left': startX = -5; endX = -1.645 * sAdj; break;
+            case 'alpha05-right': startX = 1.645 * sAdj; endX = 5; break;
+            case 'alpha01-right': startX = 2.33 * sAdj; endX = 5; break;
+            case 'large-fpc': startX = -1.96 * sAdj; endX = 1.96 * sAdj; break;
+        }
+        updateChart();
+    }
+
+    function highZ(z) {
+        document.querySelectorAll('.selected-cell').forEach(c => c.classList.remove('selected-cell'));
+        const zv = Math.abs(z);
+        if (zv > 3.4) return;
+        const r = (Math.floor(zv * 10) / 10).toFixed(1);
+        const c = (Math.round((zv - parseFloat(r)) * 100) / 100).toFixed(2);
+        const cell = document.getElementById(`z-${r}-${c}`);
+        if(cell) {
+            cell.classList.add('selected-cell');
+            cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const feedbackEl = document.getElementById('table-feedback');
+            if (feedbackEl) feedbackEl.innerText = `Z=${z.toFixed(2)} → Área=${cell.innerText}`;
+        }
+    }
+
+    function setupEventListeners() {
+        const canv = document.getElementById('mainChart');
+        if (canv) {
+            canv.onmousedown = (e) => {
+                isDrawing = true; startX = chart.scales.x.getValueForPixel(e.offsetX); endX = startX; updateChart();
+            };
+            canv.onmousemove = (e) => {
+                if (!isDrawing) return; endX = chart.scales.x.getValueForPixel(e.offsetX); updateChart();
+            };
+        }
+        window.onmouseup = () => { isDrawing = false; updateChart(); };
+
+        const nRangeEl = document.getElementById('N-range');
+        if (nRangeEl) {
+            nRangeEl.oninput = (e) => { 
+                popTotal = parseInt(e.target.value); if(sampleSize >= popTotal) sampleSize = popTotal - 1;
+                syncInputs(); updateChart(); 
+            };
+        }
+        const sRangeEl = document.getElementById('n-range');
+        if (sRangeEl) {
+            sRangeEl.oninput = (e) => { 
+                sampleSize = parseInt(e.target.value); if(sampleSize >= popTotal) sampleSize = popTotal - 1;
+                syncInputs(); updateChart(); 
+            };
+        }
+        const sigRangeEl = document.getElementById('sigma-range');
+        if (sigRangeEl) {
+            sigRangeEl.oninput = (e) => { 
+                sigmaVal = parseFloat(e.target.value); syncInputs(); updateChart(); 
+            };
+        }
+    }
+
+    function syncInputs() {
+        const nRangeEl = document.getElementById('n-range');
+        const nLabelEl = document.getElementById('n-label');
+        const NLabelEl = document.getElementById('N-label');
+        const sLabelEl = document.getElementById('sigma-label');
+
+        if (nRangeEl) nRangeEl.max = popTotal;
+        if (NLabelEl) katex.render("Población \\ (N) = " + popTotal, NLabelEl);
+        if (nLabelEl) katex.render("Muestra \\ (n) = " + sampleSize, nLabelEl);
+        if (sLabelEl) katex.render("\\sigma_{base} = " + sigmaVal.toFixed(1), sLabelEl);
+    }
+
+    function applyManualRange() {
+        const inA = document.getElementById('input-a');
+        const inB = document.getElementById('input-b');
+        if (inA && inB) {
+            startX = parseFloat(inA.value);
+            endX = parseFloat(inB.value);
+            updateChart();
+        }
+    }
+
+    function resetLaboratory() {
+        startX = null; endX = null; isDrawing = false;
+        const probValEl = document.getElementById('prob-val');
+        const interpretEl = document.getElementById('interpretation-text');
+        const integralDisplayEl = document.getElementById('area-integral-display');
+
+        if (probValEl) probValEl.innerText = "0.0000";
+        if (interpretEl) interpretEl.innerText = "Inicie el análisis seleccionando un área en la gráfica.";
+        if (integralDisplayEl) katex.render("P = 0.0000", integralDisplayEl);
+        updateChart();
+    }
+</script>
+</body>
+</html>
